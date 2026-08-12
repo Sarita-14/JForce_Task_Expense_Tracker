@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import "./App.css";
 
+const API_URL = "https://expinse.vercel.app";
+
 function App() {
 
   const [page, setPage] =
@@ -48,7 +50,7 @@ function App() {
     try {
 
       const response =
-        await fetch("/api/login", {
+        await fetch(`${API_URL}/api/login`, {
 
           method: "POST",
 
@@ -98,7 +100,7 @@ function App() {
     try {
 
       const response =
-        await fetch("/api/register", {
+        await fetch(`${API_URL}/api/register`, {
 
           method: "POST",
 
@@ -145,7 +147,7 @@ function App() {
 
       const response =
         await fetch(
-          `/api/expenses/${encodeURIComponent(
+          `${API_URL}/api/expenses/${encodeURIComponent(
             user.username
           )}`
         );
@@ -178,7 +180,7 @@ function App() {
     try {
 
       const response =
-        await fetch("/api/expenses", {
+        await fetch(`${API_URL}/api/expenses`, {
 
           method: "POST",
 
@@ -244,7 +246,7 @@ function App() {
 
       const response =
         await fetch(
-          `/api/expenses/${id}`,
+          `${API_URL}/api/expenses/${id}`,
           {
 
             method: "PUT",
@@ -314,7 +316,7 @@ function App() {
 
       const response =
         await fetch(
-          `/api/expenses/${id}`,
+          `${API_URL}/api/expenses/${id}`,
           {
             method: "DELETE"
           }

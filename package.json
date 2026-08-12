@@ -1,21 +1,14 @@
 {
-  "name": "expense-tracker-backend",
+  "name": "expinse",
+  "private": true,
   "version": "1.0.0",
-  "description": "Expense Tracker Backend",
-  "type": "module",
-  "main": "index.js",
+  "workspaces": [
+    "frontend",
+    "backend"
+  ],
   "scripts": {
-    "start": "node index.js",
-    "dev": "nodemon index.js"
-  },
-  "dependencies": {
-    "bcryptjs": "^2.4.3",
-    "cors": "^2.8.5",
-    "dotenv": "^16.4.5",
-    "express": "^4.21.2",
-    "mongodb": "^6.12.0"
-  },
-  "devDependencies": {
-    "nodemon": "^3.1.7"
+    "build": "npm run build --prefix frontend",
+    "dev:frontend": "npm run dev --prefix frontend",
+    "dev:backend": "npm run dev --prefix backend"
   }
 }

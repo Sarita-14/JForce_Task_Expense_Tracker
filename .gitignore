@@ -31,3 +31,4 @@ build/
 
 # Vite
 node_modules/.vite
+.vercel

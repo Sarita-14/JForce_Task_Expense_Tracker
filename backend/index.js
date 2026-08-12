@@ -10,14 +10,34 @@ dotenv.config();
 
 const app = express();
 
-app.use(cors());
+app.use(cors());//middleware
 app.use(express.json());
+
+app.use(async (req, res, next) => {
+  try {
+    if (!process.env.VERCEL && !getDB) {
+      await connectDB();
+    }
+
+    if (process.env.VERCEL === "1") {
+      await connectDB();
+    }
+
+    next();
+  } catch (error) {
+    console.error("Database initialization error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Database is unavailable."
+    });
+  }
+});
 
 const PORT = process.env.PORT || 4000;
 
-// --------------------------------------------------
+
 // Helper
-// --------------------------------------------------
+
 
 function errorResponse(res, message, status = 400) {
   return res.status(status).json({
@@ -26,9 +46,9 @@ function errorResponse(res, message, status = 400) {
   });
 }
 
-// --------------------------------------------------
+
 // Test Route
-// --------------------------------------------------
+
 
 app.get("/", (req, res) => {
   res.json({
@@ -37,9 +57,8 @@ app.get("/", (req, res) => {
   });
 });
 
-// --------------------------------------------------
 // REGISTER
-// --------------------------------------------------
+
 
 app.post("/api/register", async (req, res) => {
   try {
@@ -114,9 +133,9 @@ app.post("/api/register", async (req, res) => {
   }
 });
 
-// --------------------------------------------------
+
 // LOGIN
-// --------------------------------------------------
+
 
 app.post("/api/login", async (req, res) => {
   try {
@@ -609,4 +628,8 @@ async function startServer() {
   }
 }
 
-startServer();
+if (process.env.VERCEL !== "1") {
+  startServer();
+}
+
+export default app;
