@@ -10,12 +10,22 @@ import UpdateExpense from "./pages/UpdateExpense.jsx";
 import ExpenseList from "./pages/ExpenseList.jsx";
 import { useToast } from "./context/ToastContext.jsx";
 import { suggestCategory } from "./utils/categories.js";
+import AIChatbot from "./components/AIChatbot.jsx";
 import {
   loadBudget,
   loadCategoryMap,
   saveBudget,
   saveCategoryFor
 } from "./utils/localData.js";
+import {
+  currentYearMonth,
+  loadBills,
+  loadBillStatus,
+  matchBill,
+  saveBillStatus,
+  saveBills
+} from "./utils/bills.js";
+import MonthlyBills from "./pages/MonthlyBills.jsx";
 
 function App() {
   const { showToast } = useToast();
@@ -26,6 +36,8 @@ function App() {
   const [categoryMap, setCategoryMap] = useState({});
   const [budget, setBudget] = useState(0);
   const [selectedExpense, setSelectedExpense] = useState(null);
+    const [bills, setBills] = useState([]);
+  const [billStatus, setBillStatus] = useState({});
   const [authLoading, setAuthLoading] = useState(false);
   const [expensesLoading, setExpensesLoading] = useState(false);
   const [formLoading, setFormLoading] = useState(false);
@@ -35,8 +47,10 @@ function App() {
     if (savedUser) {
       const parsedUser = JSON.parse(savedUser);
       setUser(parsedUser);
-      setCategoryMap(loadCategoryMap(parsedUser.username));
+            setCategoryMap(loadCategoryMap(parsedUser.username));
       setBudget(loadBudget(parsedUser.username));
+      setBills(loadBills(parsedUser.username));
+      setBillStatus({ [currentYearMonth()]: loadBillStatus(parsedUser.username, currentYearMonth()) });
       setPage("dashboard");
     }
   }, []);
@@ -54,6 +68,8 @@ function App() {
       localStorage.setItem("expenseUser", JSON.stringify(data.user));
       setCategoryMap(loadCategoryMap(data.user.username));
       setBudget(loadBudget(data.user.username));
+      setBills(loadBills(data.user.username));
+      setBillStatus({ [currentYearMonth()]: loadBillStatus(data.user.username, currentYearMonth()) });
       setPage("dashboard");
       showToast(
         `Welcome back, ${data.user.fullName?.split(" ")[0] || data.user.username}!`,
@@ -104,8 +120,17 @@ function App() {
       });
 
       const categoryId = category || suggestCategory(title);
-      saveCategoryFor(user.username, data.expenseId, categoryId);
+            saveCategoryFor(user.username, data.expenseId, categoryId);
       setCategoryMap((current) => ({ ...current, [data.expenseId]: categoryId }));
+
+      // Auto-mark matching bill as paid
+      const matchedBillId = matchBill(categoryId, bills);
+      if (matchedBillId) {
+        const ym = currentYearMonth();
+        const nextStatus = { ...(billStatus[ym] || {}), [matchedBillId]: true };
+        saveBillStatus(user.username, ym, nextStatus);
+        setBillStatus((prev) => ({ ...prev, [ym]: nextStatus }));
+      }
 
       showToast("Expense added successfully.", "success");
       setPage("list");
@@ -155,9 +180,11 @@ function App() {
   function logout() {
     localStorage.removeItem("expenseUser");
     setUser(null);
-    setExpenses([]);
+       setExpenses([]);
     setCategoryMap({});
     setBudget(0);
+    setBills([]);
+    setBillStatus({});
     setPage("login");
   }
 
@@ -238,6 +265,24 @@ function App() {
           loading={formLoading}
         />
       )}
+
+            {page === "bills" && (
+        <MonthlyBills
+          username={user.username}
+          bills={bills}
+          billStatus={billStatus}
+          onBillsChange={(updated) => {
+            saveBills(user.username, updated);
+            setBills(updated);
+          }}
+          onStatusChange={(ym, next) => {
+            saveBillStatus(user.username, ym, next);
+            setBillStatus((prev) => ({ ...prev, [ym]: next }));
+          }}
+        />
+      )}
+
+      <AIChatbot expenses={expenses} categoryMap={categoryMap} />
     </div>
   );
 }

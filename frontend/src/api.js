@@ -74,5 +74,24 @@ export const api = {
   deleteExpense: (id) =>
     request(`/api/expenses/${id}`, {
       method: "DELETE"
+    }),
+
+  // AI features
+  getAIInsights: (expenses, categoryMap) =>
+    request("/api/ai/insights", {
+      method: "POST",
+      body: JSON.stringify({ expenses, categoryMap })
+    }),
+
+  suggestBudget: (expenses) =>
+    request("/api/ai/suggest-budget", {
+      method: "POST",
+      body: JSON.stringify({ expenses })
+    }),
+
+  chatWithAI: (expenses, categoryMap, message, history) =>
+    request("/api/ai/chat", {
+      method: "POST",
+      body: JSON.stringify({ expenses, categoryMap, message, history })
     })
 };

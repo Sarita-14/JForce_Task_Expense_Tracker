@@ -5,8 +5,10 @@ import {
   CalendarRange,
   ListPlus,
   ListChecks,
+  Loader2,
   PiggyBank,
   Receipt,
+  Sparkles,
   Sun,
   TrendingUp,
   Wallet
@@ -27,7 +29,9 @@ import {
 import StatCard from "../components/StatCard.jsx";
 import CategoryBadge from "../components/CategoryBadge.jsx";
 import EmptyState from "../components/EmptyState.jsx";
+import AIInsights from "../components/AIInsights.jsx";
 import { CATEGORIES, getCategory } from "../utils/categories.js";
+import { api } from "../api.js";
 import {
   formatCurrency,
   formatDate,
@@ -49,6 +53,8 @@ export default function Dashboard({
 }) {
   const [budgetInput, setBudgetInput] = useState(budget || "");
   const [editingBudget, setEditingBudget] = useState(false);
+  const [aibudgetLoading, setAiBudgetLoading] = useState(false);
+  const [aiBudgetReason, setAiBudgetReason] = useState(null);
 
   const stats = useMemo(() => {
     const total = expenses.reduce((sum, e) => sum + Number(e.amount), 0);
@@ -123,16 +129,34 @@ export default function Dashboard({
     const value = Number(budgetInput);
     onSetBudget(Number.isFinite(value) && value > 0 ? value : 0);
     setEditingBudget(false);
+    setAiBudgetReason(null);
+  }
+
+  async function handleAISuggestBudget() {
+    setAiBudgetLoading(true);
+    setAiBudgetReason(null);
+    try {
+      const data = await api.suggestBudget(expenses);
+      if (data.success) {
+        setBudgetInput(String(data.budget));
+        setAiBudgetReason(data.reason);
+        setEditingBudget(true);
+      }
+    } catch {
+      // silently fail — user can try again
+    } finally {
+      setAiBudgetLoading(false);
+    }
   }
 
   return (
     <main className="dashboard">
-      <section className="card dashboard-hero">
+            <section className="card dashboard-hero">
         <div>
-          <h1>Welcome back, {user.fullName?.split(" ")[0] || user.username}</h1>
+          <p className="home-paradise-welcome">Welcome back, {user.fullName?.split(" ")[0] || user.username} 👋</p>
+          <h1 className="home-paradise-title">🏠 Home Paradise</h1>
           <p className="dashboard-description">
-            Here's a snapshot of your spending. Add a new expense or browse your
-            full history using the shortcuts below.
+            Your monthly home expenses at a glance — bills, groceries, transport and more.
           </p>
           <div className="dashboard-links">
             <button className="primary-btn" onClick={onAdd}>
@@ -173,6 +197,8 @@ export default function Dashboard({
           accent="#10b981"
         />
       </section>
+
+      <AIInsights expenses={expenses} categoryMap={categoryMap} />
 
       <section className="card">
         <div className="card-heading">
@@ -222,26 +248,46 @@ export default function Dashboard({
             <h2>
               <PiggyBank size={18} /> Monthly Budget
             </h2>
-            <button className="link-btn" onClick={() => setEditingBudget((v) => !v)}>
-              {budget > 0 ? "Edit" : "Set budget"}
-            </button>
+            <div className="budget-heading-actions">
+              <button
+                className="link-btn ai-suggest-btn"
+                onClick={handleAISuggestBudget}
+                disabled={aibudgetLoading || expenses.length === 0}
+                title={expenses.length === 0 ? "Add expenses first" : "Let AI suggest a budget"}
+              >
+                {aibudgetLoading
+                  ? <Loader2 size={13} className="spin" />
+                  : <Sparkles size={13} />}
+                {aibudgetLoading ? "Thinking…" : "Suggest with AI"}
+              </button>
+              <button className="link-btn" onClick={() => { setEditingBudget((v) => !v); setAiBudgetReason(null); }}>
+                {budget > 0 ? "Edit" : "Set budget"}
+              </button>
+            </div>
           </div>
 
           {editingBudget ? (
-            <form className="budget-form" onSubmit={saveBudget}>
-              <input
-                type="number"
-                min="0"
-                step="1"
-                placeholder="e.g. 15000"
-                value={budgetInput}
-                onChange={(event) => setBudgetInput(event.target.value)}
-                autoFocus
-              />
-              <button className="primary-btn" type="submit">
-                Save
-              </button>
-            </form>
+            <>
+              {aiBudgetReason && (
+                <p className="ai-budget-reason">
+                  <Sparkles size={12} /> {aiBudgetReason}
+                </p>
+              )}
+              <form className="budget-form" onSubmit={saveBudget}>
+                <input
+                  type="number"
+                  min="0"
+                  step="1"
+                  placeholder="e.g. 15000"
+                  value={budgetInput}
+                  onChange={(event) => setBudgetInput(event.target.value)}
+                  autoFocus
+                />
+                <button className="primary-btn" type="submit">
+                  Save
+                </button>
+              </form>
+            </>
           ) : budget > 0 ? (
             <>
               <div className="budget-progress-track">

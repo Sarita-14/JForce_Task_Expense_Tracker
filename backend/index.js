@@ -5,6 +5,7 @@ import bcrypt from "bcryptjs";
 import { ObjectId } from "mongodb";
 
 import { connectDB, getDB } from "./db.js";
+import { getSpendingInsights, suggestBudget, chatWithAI } from "./ai.js";
 
 dotenv.config();
 
@@ -595,6 +596,90 @@ app.delete(
     }
   }
 );
+
+// --------------------------------------------------
+// AI ROUTES
+// --------------------------------------------------
+
+// AI Spending Insights
+app.post("/api/ai/insights", async (req, res) => {
+  try {
+    const { expenses, categoryMap } = req.body;
+
+    if (!expenses || !Array.isArray(expenses)) {
+      return errorResponse(res, "Expenses array is required.");
+    }
+
+    if (expenses.length === 0) {
+      return res.json({
+        success: true,
+        insights: [
+          {
+            type: "info",
+            title: "No Data Yet",
+            message:
+              "Add a few expenses and come back — your AI insights will appear here."
+          }
+        ]
+      });
+    }
+
+    const insights = await getSpendingInsights(expenses, categoryMap || {});
+    res.json({ success: true, insights });
+  } catch (error) {
+    console.error("AI insights error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to generate insights. Please try again."
+    });
+  }
+});
+
+// AI Budget Suggestion
+app.post("/api/ai/suggest-budget", async (req, res) => {
+  try {
+    const { expenses } = req.body;
+
+    if (!expenses || !Array.isArray(expenses)) {
+      return errorResponse(res, "Expenses array is required.");
+    }
+
+    const suggestion = await suggestBudget(expenses);
+    res.json({ success: true, ...suggestion });
+  } catch (error) {
+    console.error("AI suggest-budget error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to suggest budget. Please try again."
+    });
+  }
+});
+
+// AI Finance Chatbot
+app.post("/api/ai/chat", async (req, res) => {
+  try {
+    const { expenses, categoryMap, message, history } = req.body;
+
+    if (!message || !message.trim()) {
+      return errorResponse(res, "Message is required.");
+    }
+
+    const reply = await chatWithAI(
+      expenses || [],
+      categoryMap || {},
+      message.trim(),
+      history || []
+    );
+
+    res.json({ success: true, reply });
+  } catch (error) {
+    console.error("AI chat error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to process your message. Please try again."
+    });
+  }
+});
 
 // --------------------------------------------------
 // START SERVER

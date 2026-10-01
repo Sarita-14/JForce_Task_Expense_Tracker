@@ -6,6 +6,7 @@ import {
   LogOut,
   Menu,
   Moon,
+  Receipt,
   Sun,
   Wallet,
   X
@@ -15,7 +16,8 @@ import { useTheme } from "../context/ThemeContext.jsx";
 const NAV_ITEMS = [
   { id: "dashboard", label: "Dashboard", icon: LayoutDashboard },
   { id: "add", label: "Add Expense", icon: ListPlus },
-  { id: "list", label: "Expense List", icon: ListChecks }
+   { id: "list", label: "Expense List", icon: ListChecks },
+  { id: "bills", label: "Monthly Bills", icon: Receipt }
 ];
 
 export default function Navbar({ page, onNavigate, user, onLogout }) {
